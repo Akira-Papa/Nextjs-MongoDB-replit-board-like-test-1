@@ -1,3 +1,4 @@
+import './globals.css'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -14,12 +15,6 @@ export default function RootLayout({
     <html lang="ja">
       <head>
         <meta charSet="utf-8" />
-        <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
-          body {
-            font-family: 'Noto Sans JP', sans-serif;
-          }
-        `}</style>
       </head>
       <body>{children}</body>
     </html>
