@@ -79,7 +79,8 @@ export default function Home() {
       })
       
       if (response.ok) {
-        setPosts(posts.filter(post => post._id !== postId))
+        // Fetch latest posts after successful deletion
+        fetchPosts()
       }
     } catch (error) {
       console.error('Error deleting post:', error)
@@ -106,10 +107,8 @@ export default function Home() {
         throw new Error('Failed to update post')
       }
       
-      const updatedPost = await response.json()
-      setPosts(posts.map(post => 
-        post.id === postId ? updatedPost : post
-      ))
+      // Fetch latest posts after successful edit
+      fetchPosts()
     } catch (error) {
       console.error('Error updating post:', error)
     }
