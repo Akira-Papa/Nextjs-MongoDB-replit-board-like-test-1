@@ -1,18 +1,32 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import connectDB from '@/lib/mongodb';
+import { Post, Like } from '@/models/post';
 
 export async function GET() {
   try {
-    const posts = await prisma.post.findMany({
-      include: {
-        likes: true,
+    await connectDB();
+    const posts = await Post.aggregate([
+      {
+        $lookup: {
+          from: 'likes',
+          localField: '_id',
+          foreignField: 'postId',
+          as: 'likes'
+        }
       },
-      orderBy: {
-        createdAt: 'desc',
+      {
+        $addFields: {
+          likeCount: { $size: '$likes' }
+        }
       },
-    });
+      {
+        $sort: { createdAt: -1 }
+      }
+    ]);
+
     return NextResponse.json(posts);
   } catch (error) {
+    console.error('Error fetching posts:', error);
     return NextResponse.json(
       { error: '投稿の取得に失敗しました' },
       { status: 500 }
@@ -22,6 +36,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    await connectDB();
     const json = await request.json();
     const { title, content, userId, username } = json;
 
@@ -32,20 +47,38 @@ export async function POST(request: Request) {
       );
     }
 
-    const post = await prisma.post.create({
-      data: {
-        title,
-        content,
-        userId,
-        username,
-      },
-      include: {
-        likes: true,
-      },
+    const post = new Post({
+      title,
+      content,
+      userId,
+      username
     });
 
-    return NextResponse.json(post);
+    await post.save();
+    
+    // Populate the likes count for the new post
+    const populatedPost = await Post.aggregate([
+      {
+        $match: { _id: post._id }
+      },
+      {
+        $lookup: {
+          from: 'likes',
+          localField: '_id',
+          foreignField: 'postId',
+          as: 'likes'
+        }
+      },
+      {
+        $addFields: {
+          likeCount: { $size: '$likes' }
+        }
+      }
+    ]).then(results => results[0]);
+
+    return NextResponse.json(populatedPost);
   } catch (error) {
+    console.error('Error creating post:', error);
     return NextResponse.json(
       { error: '投稿の作成に失敗しました' },
       { status: 500 }
