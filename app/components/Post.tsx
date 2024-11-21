@@ -1,6 +1,20 @@
 'use client'
 
 import { useState } from 'react'
+import { 
+  Paper, 
+  Typography, 
+  Box, 
+  IconButton, 
+  TextField, 
+  Button,
+  Tooltip,
+  Divider
+} from '@mui/material'
+import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
+import FavoriteIcon from '@mui/icons-material/Favorite'
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
 
 interface PostProps {
   post: {
@@ -60,67 +74,109 @@ export default function Post({ post, onDelete, onEdit }: PostProps) {
 
   if (isEditing) {
     return (
-      <div className="bg-white rounded-lg shadow-md mb-4 p-4">
-        <textarea
-          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+      <Paper elevation={2} sx={{ p: 3, mb: 2 }}>
+        <TextField
+          multiline
           rows={4}
+          fullWidth
           value={editContent}
           onChange={(e) => setEditContent(e.target.value)}
+          variant="outlined"
+          sx={{ mb: 2 }}
         />
-        <div className="flex justify-end gap-2">
-          <button
-            className="px-4 py-2 text-gray-600 border rounded-lg hover:bg-gray-50"
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+          <Button
+            variant="outlined"
+            color="inherit"
             onClick={() => setIsEditing(false)}
           >
             キャンセル
-          </button>
-          <button
-            className="px-4 py-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600"
+          </Button>
+          <Button
+            variant="contained"
             onClick={handleEdit}
           >
             更新
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Box>
+      </Paper>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md mb-4">
-      <div className="p-4">
-        <p className="mb-2">{post.content}</p>
-        <p className="text-sm text-gray-500" suppressHydrationWarning>
+    <Paper 
+      elevation={2}
+      sx={{
+        mb: 2,
+        transition: 'all 0.2s ease-in-out',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.12)',
+        }
+      }}
+    >
+      <Box sx={{ p: 3 }}>
+        <Typography 
+          variant="body1" 
+          sx={{ 
+            mb: 2,
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word'
+          }}
+        >
+          {post.content}
+        </Typography>
+        <Typography 
+          variant="body2" 
+          color="text.secondary" 
+          suppressHydrationWarning
+          sx={{ mb: 1 }}
+        >
           {new Date(post.createdAt).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' })}
-        </p>
-      </div>
-      <div className="flex justify-end p-2 border-t">
-        <button
-          className={`p-2 rounded-full ${isLiked ? 'text-red-500' : 'text-gray-500'} hover:bg-gray-100 disabled:opacity-50`}
-          onClick={handleLike}
-          disabled={isLiking}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-          </svg>
-          <span className="ml-1">{likeCount}</span>
-        </button>
-        <button
-          className="p-2 text-blue-500 rounded-full hover:bg-gray-100"
-          onClick={() => setIsEditing(true)}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-          </svg>
-        </button>
-        <button
-          className="p-2 text-red-500 rounded-full hover:bg-gray-100"
-          onClick={() => onDelete(post._id)}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-        </button>
-      </div>
-    </div>
+        </Typography>
+      </Box>
+      <Divider />
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'flex-end', 
+        p: 1,
+        gap: 1
+      }}>
+        <Tooltip title={isLiked ? 'いいねを取り消す' : 'いいね'}>
+          <IconButton
+            onClick={handleLike}
+            disabled={isLiking}
+            color={isLiked ? 'error' : 'default'}
+            sx={{
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                transform: 'scale(1.1)',
+              }
+            }}
+          >
+            {isLiked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+            <Typography variant="caption" sx={{ ml: 0.5 }}>
+              {likeCount}
+            </Typography>
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="編集">
+          <IconButton
+            onClick={() => setIsEditing(true)}
+            color="primary"
+          >
+            <EditIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="削除">
+          <IconButton
+            onClick={() => onDelete(post._id)}
+            color="error"
+          >
+            <DeleteIcon />
+          </IconButton>
+        </Tooltip>
+      </Box>
+    </Paper>
   )
 }
