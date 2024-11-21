@@ -1,4 +1,4 @@
-// File: /home/runner/KonnichiwaDisplay-3/app/api/posts/route.ts
+// File: /home/runner/Nextjs-MongoDB-replit-board-like-test-1/app/api/posts/route.ts
 import * as entry from '../../../../../app/api/posts/route.js'
 import type { NextRequest } from 'next/server.js'
 
