@@ -1,14 +1,12 @@
-import { prisma } from '../lib/prisma'
+import connectDB from '../lib/mongodb'
+import { Post } from '../models/post'
 
 async function getPosts() {
-  const posts = await prisma.post.findMany({
-    include: {
-      likes: true,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  })
+  await connectDB()
+  const posts = await Post.find()
+    .populate('likes')
+    .sort({ createdAt: -1 })
+    .lean()
   return posts
 }
 
@@ -35,23 +33,23 @@ export default async function Home() {
 
       <div className="space-y-6">
         {posts.map((post) => (
-          <div key={post.id} className="bg-white p-6 rounded-lg shadow">
+          <div key={post._id} className="bg-white p-6 rounded-lg shadow">
             <p className="text-lg mb-4">{post.content}</p>
             <div className="flex items-center justify-between text-sm text-gray-500">
               <span>
                 {new Date(post.createdAt).toLocaleDateString('ja-JP')}
               </span>
               <div className="flex items-center space-x-4">
-                <form action={`/api/posts/${post.id}/like`} method="POST">
+                <form action={`/api/posts/${post._id}/like`} method="POST">
                   <button
                     type="submit"
                     className="flex items-center space-x-1 text-pink-500 hover:text-pink-600"
                   >
                     <span>♥</span>
-                    <span>{post.likes.length}</span>
+                    <span>{post.likes?.length || 0}</span>
                   </button>
                 </form>
-                <form action={`/api/posts/${post.id}`} method="DELETE">
+                <form action={`/api/posts/${post._id}`} method="DELETE">
                   <button
                     type="submit"
                     className="text-red-500 hover:text-red-600"

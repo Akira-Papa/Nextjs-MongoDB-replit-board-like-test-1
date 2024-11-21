@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '../../../lib/prisma'
+import connectDB from '../../../lib/mongodb'
+import { Post } from '../../../models/post'
 
 export async function POST(request: Request) {
   try {
+    await connectDB()
     const formData = await request.formData()
     const content = formData.get('content')
 
@@ -13,10 +15,8 @@ export async function POST(request: Request) {
       )
     }
 
-    const post = await prisma.post.create({
-      data: {
-        content,
-      },
+    const post = await Post.create({
+      content,
     })
 
     return NextResponse.redirect(new URL('/', request.url))

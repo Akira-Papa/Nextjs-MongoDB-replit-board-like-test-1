@@ -1,23 +1,24 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '../../../../../lib/prisma'
+import connectDB from '../../../../../lib/mongodb'
+import { Post, Like } from '../../../../../models/post'
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = parseInt(params.id)
-    const existingLike = await prisma.like.findUnique({
-      where: { postId: id },
-    })
+    await connectDB()
+    const existingLike = await Like.findOne({ postId: params.id })
 
     if (existingLike) {
-      await prisma.like.delete({
-        where: { id: existingLike.id },
+      await Like.findByIdAndDelete(existingLike._id)
+      await Post.findByIdAndUpdate(params.id, {
+        $pull: { likes: existingLike._id }
       })
     } else {
-      await prisma.like.create({
-        data: { postId: id },
+      const newLike = await Like.create({ postId: params.id })
+      await Post.findByIdAndUpdate(params.id, {
+        $push: { likes: newLike._id }
       })
     }
 
