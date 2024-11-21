@@ -47,7 +47,7 @@ export async function DELETE(
     await connectDB()
     await Like.deleteMany({ postId: params.id })
     await Post.findByIdAndDelete(params.id)
-    return NextResponse.redirect(new URL('/', request.url))
+    return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to delete post' },

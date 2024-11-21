@@ -9,9 +9,11 @@ interface PostProps {
     createdAt: string
     likes: any[]
   }
+  onDelete: (postId: string) => Promise<void>
+  onEdit: (postId: string, newContent: string) => Promise<void>
 }
 
-export default function Post({ post }: PostProps) {
+export default function Post({ post, onDelete, onEdit }: PostProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(post.content)
   const [likeCount, setLikeCount] = useState(post.likes?.length || 0)
@@ -67,17 +69,8 @@ export default function Post({ post }: PostProps) {
 
   const handleEdit = async () => {
     try {
-      const response = await fetch(`/api/posts/${post._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: editContent }),
-      })
-      
-      if (response.ok) {
-        window.location.reload()
-      }
+      await onEdit(post._id, editContent)
+      setIsEditing(false)
     } catch (error) {
       console.error('Error updating post:', error)
     }
@@ -114,8 +107,8 @@ export default function Post({ post }: PostProps) {
     <div className="bg-white p-6 rounded-lg shadow">
       <p className="text-lg mb-4">{post.content}</p>
       <div className="flex items-center justify-between text-sm text-gray-500">
-        <span>
-          {new Date(post.createdAt).toLocaleDateString('ja-JP')}
+        <span suppressHydrationWarning>
+          {new Date(post.createdAt).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' })}
         </span>
         <div className="flex items-center space-x-4">
           <button
@@ -133,7 +126,7 @@ export default function Post({ post }: PostProps) {
             <span>{likeCount}</span>
           </button>
           <button
-            onClick={handleDelete}
+            onClick={() => onDelete(post._id)}
             className="text-red-500 hover:text-red-600"
           >
             削除
