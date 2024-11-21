@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import connectDB from '../../../lib/mongodb';
+import { Post } from '../../../models/post';
+import mongoose from 'mongoose';
 
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    await connectDB();
     const json = await request.json();
     const { title, content, userId } = json;
 
@@ -17,9 +20,7 @@ export async function PUT(
     }
 
     // Find the post first to check ownership
-    const existingPost = await prisma.post.findUnique({
-      where: { id: params.id }
-    });
+    const existingPost = await Post.findById(params.id);
 
     if (!existingPost) {
       return NextResponse.json(
@@ -35,20 +36,38 @@ export async function PUT(
       );
     }
 
-    const post = await prisma.post.update({
-      where: { id: params.id },
-      data: {
+    const updatedPost = await Post.findByIdAndUpdate(
+      params.id,
+      {
         title,
         content,
         updatedAt: new Date(),
       },
-      include: {
-        likes: true,
+      { new: true }
+    ).populate('likes');
+
+    const post = await Post.aggregate([
+      {
+        $match: { _id: new mongoose.Types.ObjectId(params.id) }
       },
-    });
+      {
+        $lookup: {
+          from: 'likes',
+          localField: '_id',
+          foreignField: 'postId',
+          as: 'likes'
+        }
+      },
+      {
+        $addFields: {
+          likeCount: { $size: '$likes' }
+        }
+      }
+    ]).then(results => results[0]);
 
     return NextResponse.json(post);
   } catch (error) {
+    console.error('Error updating post:', error);
     return NextResponse.json(
       { error: '投稿の更新に失敗しました' },
       { status: 500 }
@@ -61,12 +80,11 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    await connectDB();
     const { userId } = await request.json();
 
     // Find the post first to check ownership
-    const post = await prisma.post.findUnique({
-      where: { id: params.id }
-    });
+    const post = await Post.findById(params.id);
 
     if (!post) {
       return NextResponse.json(
@@ -82,12 +100,11 @@ export async function DELETE(
       );
     }
 
-    await prisma.post.delete({
-      where: { id: params.id },
-    });
+    await Post.findByIdAndDelete(params.id);
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('Error deleting post:', error);
     return NextResponse.json(
       { error: '投稿の削除に失敗しました' },
       { status: 500 }

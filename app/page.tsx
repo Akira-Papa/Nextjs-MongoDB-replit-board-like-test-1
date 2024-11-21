@@ -1,16 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { getCurrentUser, User } from './lib/user'
 import Post from './components/Post'
 import { Box, Paper, TextField, Button, CircularProgress } from '@mui/material'
-import { Post as PostType } from './types/post'
+import { Post as PostType } from '@/app/types/post'
 
 export default function Home() {
   const [posts, setPosts] = useState<PostType[]>([])
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
+    const user = getCurrentUser()
+    setCurrentUser(user)
     fetchPosts()
   }, [])
 
@@ -26,21 +31,28 @@ export default function Home() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!content.trim() || isSubmitting) return
+    if (!title.trim() || !content.trim() || isSubmitting || !currentUser) return
 
     setIsSubmitting(true)
-    const formData = new FormData()
-    formData.append('content', content)
 
     try {
       const response = await fetch('/api/posts', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          content: content.trim(),
+          userId: currentUser.userId,
+          username: currentUser.username,
+        }),
       })
 
       if (response.ok) {
         const newPost = await response.json()
         setPosts([newPost, ...posts])
+        setTitle('')
         setContent('')
       }
     } catch (error) {
@@ -51,9 +63,15 @@ export default function Home() {
   }
 
   const handleDelete = async (postId: string) => {
+    if (!currentUser) return
+
     try {
       const response = await fetch(`/api/posts/${postId}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: currentUser.userId }),
       })
       
       if (response.ok) {
@@ -64,20 +82,26 @@ export default function Home() {
     }
   }
 
-  const handleEdit = async (postId: string, newContent: string) => {
+  const handleEdit = async (postId: string, newTitle: string, newContent: string) => {
+    if (!currentUser) return
+
     try {
       const response = await fetch(`/api/posts/${postId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ content: newContent }),
+        body: JSON.stringify({
+          title: newTitle.trim(),
+          content: newContent.trim(),
+          userId: currentUser.userId,
+        }),
       })
       
       if (response.ok) {
         const updatedPost = await response.json()
         setPosts(posts.map(post => 
-          post._id === postId ? { ...post, content: updatedPost.content } : post
+          post._id === postId ? updatedPost : post
         ))
       }
     } catch (error) {
@@ -102,6 +126,15 @@ export default function Home() {
         }}
       >
         <TextField
+          fullWidth
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="タイトルを入力..."
+          required
+          variant="outlined"
+          sx={{ mb: 2 }}
+        />
+        <TextField
           multiline
           rows={4}
           fullWidth
@@ -116,7 +149,7 @@ export default function Home() {
           <Button
             type="submit"
             variant="contained"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !currentUser}
             startIcon={
               isSubmitting ? (
                 <CircularProgress size={20} color="inherit" />
@@ -136,7 +169,8 @@ export default function Home() {
         {posts.map((post) => (
           <Post 
             key={post._id} 
-            post={post} 
+            post={post}
+            currentUser={currentUser}
             onDelete={handleDelete}
             onEdit={handleEdit}
           />

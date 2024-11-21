@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import connectDB from '../../../../lib/mongodb';
+import { Post, Like } from '../../../../models/post';
+import mongoose from 'mongoose';
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    await connectDB();
     const { userId } = await request.json();
 
     if (!userId) {
@@ -15,10 +18,7 @@ export async function POST(
       );
     }
 
-    const post = await prisma.post.findUnique({
-      where: { id: params.id },
-      include: { likes: true }
-    });
+    const post = await Post.findById(params.id);
 
     if (!post) {
       return NextResponse.json(
@@ -28,36 +28,68 @@ export async function POST(
     }
 
     // Find existing like
-    const existingLike = await prisma.like.findFirst({
-      where: {
-        postId: params.id,
-        userId: userId
-      }
+    const existingLike = await Like.findOne({
+      postId: new mongoose.Types.ObjectId(params.id),
+      userId: userId
     });
 
     if (existingLike) {
       // Remove like
-      await prisma.like.delete({
-        where: { id: existingLike.id }
-      });
+      await Like.findByIdAndDelete(existingLike._id);
+
+      const updatedPost = await Post.aggregate([
+        {
+          $match: { _id: new mongoose.Types.ObjectId(params.id) }
+        },
+        {
+          $lookup: {
+            from: 'likes',
+            localField: '_id',
+            foreignField: 'postId',
+            as: 'likes'
+          }
+        },
+        {
+          $addFields: {
+            likeCount: { $size: '$likes' }
+          }
+        }
+      ]).then(results => results[0]);
 
       return NextResponse.json({
         message: 'いいねを取り消しました',
-        likeCount: post.likes.length - 1,
+        likeCount: updatedPost.likeCount,
         isLiked: false
       });
     } else {
       // Add new like
-      await prisma.like.create({
-        data: {
-          postId: params.id,
-          userId: userId
-        }
+      await Like.create({
+        postId: new mongoose.Types.ObjectId(params.id),
+        userId: userId
       });
+
+      const updatedPost = await Post.aggregate([
+        {
+          $match: { _id: new mongoose.Types.ObjectId(params.id) }
+        },
+        {
+          $lookup: {
+            from: 'likes',
+            localField: '_id',
+            foreignField: 'postId',
+            as: 'likes'
+          }
+        },
+        {
+          $addFields: {
+            likeCount: { $size: '$likes' }
+          }
+        }
+      ]).then(results => results[0]);
 
       return NextResponse.json({
         message: 'いいねしました',
-        likeCount: post.likes.length + 1,
+        likeCount: updatedPost.likeCount,
         isLiked: true
       });
     }

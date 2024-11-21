@@ -16,18 +16,25 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import FavoriteIcon from '@mui/icons-material/Favorite'
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
 
+import { User } from '../lib/user';
+
 interface PostProps {
   post: {
     _id: string
+    title: string
     content: string
+    userId: string
+    username: string
     createdAt: string
     likes: any[]
   }
+  currentUser: User
   onDelete: (postId: string) => Promise<void>
-  onEdit: (postId: string, newContent: string) => Promise<void>
+  onEdit: (postId: string, title: string, content: string) => Promise<void>
 }
 
-export default function Post({ post, onDelete, onEdit }: PostProps) {
+export default function Post({ post, currentUser, onDelete, onEdit }: PostProps) {
+  const isOwner = currentUser?.userId === post.userId;
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(post.content)
   const [likeCount, setLikeCount] = useState(post.likes?.length || 0)
@@ -35,8 +42,10 @@ export default function Post({ post, onDelete, onEdit }: PostProps) {
   const [isLiking, setIsLiking] = useState(false)
 
   const handleLike = async () => {
-    if (isLiking) return
+    if (isLiking || !currentUser) return
     setIsLiking(true)
+
+    const userId = currentUser.userId
     
     const newLikeCount = isLiked ? likeCount - 1 : likeCount + 1
     setLikeCount(newLikeCount)
@@ -45,6 +54,10 @@ export default function Post({ post, onDelete, onEdit }: PostProps) {
     try {
       const response = await fetch(`/api/posts/${post._id}/like`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: currentUser.userId }),
       })
       
       if (!response.ok) {
