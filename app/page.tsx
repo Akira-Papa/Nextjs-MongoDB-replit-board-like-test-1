@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { TextField, Button, Paper, Box, CircularProgress } from '@mui/material'
 import Post from './components/Post'
 import { Post as PostType } from './types/post'
 
@@ -85,26 +86,32 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <form onSubmit={handleSubmit} className="mb-8">
-        <textarea
+    <Box sx={{ maxWidth: 800, mx: 'auto' }}>
+      <Paper sx={{ p: 3, mb: 4 }} component="form" onSubmit={handleSubmit}>
+        <TextField
+          fullWidth
+          multiline
+          rows={4}
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="w-full p-4 border rounded-lg shadow-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          rows={4}
           placeholder="投稿を書いてください..."
+          variant="outlined"
+          sx={{ mb: 2 }}
           required
         />
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50"
-        >
-          投稿する
-        </button>
-      </form>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={isSubmitting}
+            startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
+          >
+            投稿する
+          </Button>
+        </Box>
+      </Paper>
 
-      <div className="space-y-6">
+      <Box>
         {posts.map((post) => (
           <Post 
             key={post._id} 
@@ -113,7 +120,7 @@ export default function Home() {
             onEdit={handleEdit}
           />
         ))}
-      </div>
-    </div>
+      </Box>
+    </Box>
   )
 }

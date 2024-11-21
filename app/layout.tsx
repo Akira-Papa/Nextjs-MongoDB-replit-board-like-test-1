@@ -1,6 +1,8 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { AppBar, Container, Typography } from '@mui/material'
+import ThemeRegistry from './components/ThemeRegistry'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -16,11 +18,19 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <body className={`${inter.className} min-h-screen bg-gray-100`}>
-        <main className="container mx-auto px-4 py-8">
-          <h1 className="text-4xl font-bold text-center mb-8">掲示板</h1>
-          {children}
-        </main>
+      <body className={inter.className}>
+        <ThemeRegistry>
+          <AppBar position="static" sx={{ mb: 4 }}>
+            <Container>
+              <Typography variant="h4" component="h1" sx={{ py: 2 }}>
+                掲示板
+              </Typography>
+            </Container>
+          </AppBar>
+          <Container>
+            {children}
+          </Container>
+        </ThemeRegistry>
       </body>
     </html>
   )
