@@ -8,28 +8,44 @@ export async function POST(
 ) {
   try {
     await connectDB()
-    const existingLike = await Like.findOne({ postId: params.id })
-
-    if (existingLike) {
-      await Like.findByIdAndDelete(existingLike._id)
-      await Post.findByIdAndUpdate(params.id, {
-        $pull: { likes: existingLike._id }
-      })
-    } else {
-      const newLike = await Like.create({ postId: params.id })
-      await Post.findByIdAndUpdate(params.id, {
-        $push: { likes: newLike._id }
-      })
+    
+    const post = await Post.findById(params.id)
+    if (!post) {
+      return NextResponse.json(
+        { error: 'Post not found' },
+        { status: 404 }
+      )
     }
 
-    const updatedPost = await Post.findById(params.id).populate('likes')
-    
+    // Find existing like
+    const existingLike = await Like.findOne({ postId: params.id })
+
+    let updatedPost
+    if (existingLike) {
+      // Remove like
+      await Like.deleteOne({ _id: existingLike._id })
+      updatedPost = await Post.findByIdAndUpdate(
+        params.id,
+        { $pull: { likes: existingLike._id } },
+        { new: true }
+      ).populate('likes')
+    } else {
+      // Add new like
+      const newLike = await Like.create({ postId: params.id })
+      updatedPost = await Post.findByIdAndUpdate(
+        params.id,
+        { $push: { likes: newLike._id } },
+        { new: true }
+      ).populate('likes')
+    }
+
     return NextResponse.json({
       message: existingLike ? 'Like removed' : 'Post liked',
       likeCount: updatedPost.likes.length,
       isLiked: !existingLike
     })
   } catch (error) {
+    console.error('Error toggling like:', error)
     return NextResponse.json(
       { error: 'Failed to toggle like' },
       { status: 500 }
