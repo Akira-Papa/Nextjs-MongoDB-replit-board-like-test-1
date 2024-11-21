@@ -1,17 +1,13 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/app/lib/prisma';
+import connectDB from '@/app/lib/mongodb';
+import { Post } from '@/app/models/post';
 
 export async function GET() {
   try {
-    const posts = await prisma.post.findMany({
-      include: {
-        likes: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
+    await connectDB();
+    const posts = await Post.find()
+      .sort({ createdAt: -1 })
+      .populate('likes');
     return NextResponse.json(posts);
   } catch (error) {
     console.error('Error fetching posts:', error);
@@ -24,6 +20,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    await connectDB();
     const json = await request.json();
     const { title, content, userId, username } = json;
 
@@ -34,16 +31,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const post = await prisma.post.create({
-      data: {
-        title,
-        content,
-        userId,
-        username,
-      },
-      include: {
-        likes: true,
-      },
+    const post = await Post.create({
+      title,
+      content,
+      userId,
+      username
     });
 
     return NextResponse.json(post);
