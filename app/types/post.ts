@@ -12,4 +12,5 @@ export interface Post {
 export interface LikeResponse {
   likeCount: number
   message: string
+  isLiked: boolean
 }

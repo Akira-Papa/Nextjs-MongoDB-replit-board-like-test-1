@@ -26,7 +26,8 @@ export async function POST(
     
     return NextResponse.json({
       message: existingLike ? 'Like removed' : 'Post liked',
-      likeCount: updatedPost.likes.length
+      likeCount: updatedPost.likes.length,
+      isLiked: !existingLike
     })
   } catch (error) {
     return NextResponse.json(

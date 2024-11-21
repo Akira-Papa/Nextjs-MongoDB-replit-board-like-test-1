@@ -13,6 +13,7 @@ interface PostProps {
 
 export default function Post({ post }: PostProps) {
   const [likeCount, setLikeCount] = useState(post.likes?.length || 0)
+  const [isLiked, setIsLiked] = useState(post.likes?.length > 0)
   const [isLiking, setIsLiking] = useState(false)
 
   const handleLike = async () => {
@@ -20,7 +21,9 @@ export default function Post({ post }: PostProps) {
     setIsLiking(true)
     
     // Optimistic update
-    setLikeCount(prev => prev + 1)
+    const newLikeCount = isLiked ? likeCount - 1 : likeCount + 1
+    setLikeCount(newLikeCount)
+    setIsLiked(!isLiked)
 
     try {
       const response = await fetch(`/api/posts/${post._id}/like`, {
@@ -29,15 +32,17 @@ export default function Post({ post }: PostProps) {
       
       if (!response.ok) {
         // Revert optimistic update if failed
-        setLikeCount(prev => prev - 1)
-        throw new Error('Failed to like post')
+        setLikeCount(likeCount)
+        setIsLiked(isLiked)
+        throw new Error('Failed to toggle like')
       }
 
       const data = await response.json()
       // Update with actual count from server
       setLikeCount(data.likeCount)
+      setIsLiked(data.isLiked)
     } catch (error) {
-      console.error('Error liking post:', error)
+      console.error('Error toggling like:', error)
     } finally {
       setIsLiking(false)
     }
