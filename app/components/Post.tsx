@@ -12,6 +12,8 @@ interface PostProps {
 }
 
 export default function Post({ post }: PostProps) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editContent, setEditContent] = useState(post.content)
   const [likeCount, setLikeCount] = useState(post.likes?.length || 0)
   const [isLiked, setIsLiked] = useState(post.likes?.length > 0)
   const [isLiking, setIsLiking] = useState(false)
@@ -63,6 +65,51 @@ export default function Post({ post }: PostProps) {
     }
   }
 
+  const handleEdit = async () => {
+    try {
+      const response = await fetch(`/api/posts/${post._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: editContent }),
+      })
+      
+      if (response.ok) {
+        window.location.reload()
+      }
+    } catch (error) {
+      console.error('Error updating post:', error)
+    }
+  }
+
+  if (isEditing) {
+    return (
+      <div className="bg-white p-6 rounded-lg shadow">
+        <textarea
+          value={editContent}
+          onChange={(e) => setEditContent(e.target.value)}
+          className="w-full p-2 border rounded mb-2"
+          rows={4}
+        />
+        <div className="flex justify-end space-x-2">
+          <button
+            onClick={() => setIsEditing(false)}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800"
+          >
+            キャンセル
+          </button>
+          <button
+            onClick={handleEdit}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            更新
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <p className="text-lg mb-4">{post.content}</p>
@@ -71,6 +118,12 @@ export default function Post({ post }: PostProps) {
           {new Date(post.createdAt).toLocaleDateString('ja-JP')}
         </span>
         <div className="flex items-center space-x-4">
+          <button
+            onClick={() => setIsEditing(true)}
+            className="text-blue-500 hover:text-blue-600"
+          >
+            編集
+          </button>
           <button
             onClick={handleLike}
             disabled={isLiking}
