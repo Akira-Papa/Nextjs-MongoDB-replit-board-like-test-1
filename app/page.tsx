@@ -1,13 +1,15 @@
 import connectDB from '../lib/mongodb'
-import { Post } from '../models/post'
+import { Post as PostModel } from '../models/post'
+import Post from './components/Post'
+import { Post as PostType } from './types/post'
 
-async function getPosts() {
+async function getPosts(): Promise<PostType[]> {
   await connectDB()
-  const posts = await Post.find()
+  const posts = await PostModel.find()
     .populate('likes')
     .sort({ createdAt: -1 })
     .lean()
-  return posts
+  return posts as PostType[]
 }
 
 export default async function Home() {
@@ -33,33 +35,7 @@ export default async function Home() {
 
       <div className="space-y-6">
         {posts.map((post) => (
-          <div key={post._id} className="bg-white p-6 rounded-lg shadow">
-            <p className="text-lg mb-4">{post.content}</p>
-            <div className="flex items-center justify-between text-sm text-gray-500">
-              <span>
-                {new Date(post.createdAt).toLocaleDateString('ja-JP')}
-              </span>
-              <div className="flex items-center space-x-4">
-                <form action={`/api/posts/${post._id}/like`} method="POST">
-                  <button
-                    type="submit"
-                    className="flex items-center space-x-1 text-pink-500 hover:text-pink-600"
-                  >
-                    <span>♥</span>
-                    <span>{post.likes?.length || 0}</span>
-                  </button>
-                </form>
-                <form action={`/api/posts/${post._id}`} method="DELETE">
-                  <button
-                    type="submit"
-                    className="text-red-500 hover:text-red-600"
-                  >
-                    削除
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
+          <Post key={post._id} post={post} />
         ))}
       </div>
     </div>

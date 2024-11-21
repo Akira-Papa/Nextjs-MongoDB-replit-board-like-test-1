@@ -22,7 +22,12 @@ export async function POST(
       })
     }
 
-    return NextResponse.redirect(new URL('/', request.url))
+    const updatedPost = await Post.findById(params.id).populate('likes')
+    
+    return NextResponse.json({
+      message: existingLike ? 'Like removed' : 'Post liked',
+      likeCount: updatedPost.likes.length
+    })
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to toggle like' },
