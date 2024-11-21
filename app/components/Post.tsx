@@ -112,18 +112,18 @@ export default function Post({ post, onDelete, onEdit }: PostProps) {
         </span>
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => setIsEditing(true)}
-            className="text-blue-500 hover:text-blue-600"
-          >
-            編集
-          </button>
-          <button
             onClick={handleLike}
             disabled={isLiking}
             className="flex items-center space-x-1 text-pink-500 hover:text-pink-600"
           >
             <span>♥</span>
             <span>{likeCount}</span>
+          </button>
+          <button
+            onClick={() => setIsEditing(true)}
+            className="text-blue-500 hover:text-blue-600"
+          >
+            編集
           </button>
           <button
             onClick={() => onDelete(post._id)}
