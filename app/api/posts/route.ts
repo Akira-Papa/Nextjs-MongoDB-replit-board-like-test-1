@@ -1,28 +1,16 @@
 import { NextResponse } from 'next/server';
-import connectDB from '../../lib/mongodb';
-import { Post, Like } from '../../models/post';
+import prisma from '@/app/lib/prisma';
 
 export async function GET() {
   try {
-    await connectDB();
-    const posts = await Post.aggregate([
-      {
-        $lookup: {
-          from: 'likes',
-          localField: '_id',
-          foreignField: 'postId',
-          as: 'likes'
-        }
+    const posts = await prisma.post.findMany({
+      include: {
+        likes: true,
       },
-      {
-        $addFields: {
-          likeCount: { $size: '$likes' }
-        }
+      orderBy: {
+        createdAt: 'desc',
       },
-      {
-        $sort: { createdAt: -1 }
-      }
-    ]);
+    });
 
     return NextResponse.json(posts);
   } catch (error) {
@@ -36,7 +24,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    await connectDB();
     const json = await request.json();
     const { title, content, userId, username } = json;
 
@@ -47,36 +34,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const post = new Post({
-      title,
-      content,
-      userId,
-      username
+    const post = await prisma.post.create({
+      data: {
+        title,
+        content,
+        userId,
+        username,
+      },
+      include: {
+        likes: true,
+      },
     });
 
-    await post.save();
-    
-    // Populate the likes count for the new post
-    const populatedPost = await Post.aggregate([
-      {
-        $match: { _id: post._id }
-      },
-      {
-        $lookup: {
-          from: 'likes',
-          localField: '_id',
-          foreignField: 'postId',
-          as: 'likes'
-        }
-      },
-      {
-        $addFields: {
-          likeCount: { $size: '$likes' }
-        }
-      }
-    ]).then(results => results[0]);
-
-    return NextResponse.json(populatedPost);
+    return NextResponse.json(post);
   } catch (error) {
     console.error('Error creating post:', error);
     return NextResponse.json(

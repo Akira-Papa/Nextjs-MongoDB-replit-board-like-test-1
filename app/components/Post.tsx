@@ -36,6 +36,7 @@ interface PostProps {
 export default function Post({ post, currentUser, onDelete, onEdit }: PostProps) {
   const isOwner = currentUser?.userId === post.userId;
   const [isEditing, setIsEditing] = useState(false)
+  const [editTitle, setEditTitle] = useState(post.title)
   const [editContent, setEditContent] = useState(post.content)
   const [likeCount, setLikeCount] = useState(post.likes?.length || 0)
   const [isLiked, setIsLiked] = useState(post.likes?.length > 0)
@@ -78,7 +79,7 @@ export default function Post({ post, currentUser, onDelete, onEdit }: PostProps)
 
   const handleEdit = async () => {
     try {
-      await onEdit(post._id, editContent)
+      await onEdit(post._id, editTitle, editContent)
       setIsEditing(false)
     } catch (error) {
       console.error('Error updating post:', error)
@@ -88,6 +89,14 @@ export default function Post({ post, currentUser, onDelete, onEdit }: PostProps)
   if (isEditing) {
     return (
       <Paper elevation={2} sx={{ p: 3, mb: 2 }}>
+        <TextField
+          fullWidth
+          value={editTitle}
+          onChange={(e) => setEditTitle(e.target.value)}
+          placeholder="タイトルを入力..."
+          variant="outlined"
+          sx={{ mb: 2 }}
+        />
         <TextField
           multiline
           rows={4}

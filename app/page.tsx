@@ -102,12 +102,14 @@ export default function Home() {
         }),
       })
       
-      if (response.ok) {
-        const updatedPost = await response.json()
-        setPosts(posts.map(post => 
-          post._id === postId ? updatedPost : post
-        ))
+      if (!response.ok) {
+        throw new Error('Failed to update post')
       }
+      
+      const updatedPost = await response.json()
+      setPosts(posts.map(post => 
+        post.id === postId ? updatedPost : post
+      ))
     } catch (error) {
       console.error('Error updating post:', error)
     }
