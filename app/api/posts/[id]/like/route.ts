@@ -1,54 +1,71 @@
-import { NextResponse } from 'next/server'
-import connectDB from '../../../../../lib/mongodb'
-import { Post, Like } from '../../../../../models/post'
+import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    await connectDB()
-    
-    const post = await Post.findById(params.id)
+    const { userId } = await request.json();
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'ユーザーIDが必要です' },
+        { status: 400 }
+      );
+    }
+
+    const post = await prisma.post.findUnique({
+      where: { id: params.id },
+      include: { likes: true }
+    });
+
     if (!post) {
       return NextResponse.json(
-        { error: 'Post not found' },
+        { error: '投稿が見つかりません' },
         { status: 404 }
-      )
+      );
     }
 
     // Find existing like
-    const existingLike = await Like.findOne({ postId: params.id })
+    const existingLike = await prisma.like.findFirst({
+      where: {
+        postId: params.id,
+        userId: userId
+      }
+    });
 
-    let updatedPost
     if (existingLike) {
       // Remove like
-      await Like.deleteOne({ _id: existingLike._id })
-      updatedPost = await Post.findByIdAndUpdate(
-        params.id,
-        { $pull: { likes: existingLike._id } },
-        { new: true }
-      ).populate('likes')
+      await prisma.like.delete({
+        where: { id: existingLike.id }
+      });
+
+      return NextResponse.json({
+        message: 'いいねを取り消しました',
+        likeCount: post.likes.length - 1,
+        isLiked: false
+      });
     } else {
       // Add new like
-      const newLike = await Like.create({ postId: params.id })
-      updatedPost = await Post.findByIdAndUpdate(
-        params.id,
-        { $push: { likes: newLike._id } },
-        { new: true }
-      ).populate('likes')
-    }
+      await prisma.like.create({
+        data: {
+          postId: params.id,
+          userId: userId
+        }
+      });
 
-    return NextResponse.json({
-      message: existingLike ? 'Like removed' : 'Post liked',
-      likeCount: updatedPost.likes.length,
-      isLiked: !existingLike
-    })
+      return NextResponse.json({
+        message: 'いいねしました',
+        likeCount: post.likes.length + 1,
+        isLiked: true
+      });
+    }
   } catch (error) {
-    console.error('Error toggling like:', error)
+    console.error('Error toggling like:', error);
     return NextResponse.json(
-      { error: 'Failed to toggle like' },
+      { error: 'いいねの処理に失敗しました' },
       { status: 500 }
-    )
+    );
   }
 }

@@ -1,49 +1,54 @@
-import { NextResponse } from 'next/server'
-import connectDB from '../../../lib/mongodb'
-import { Post } from '../../../models/post'
+import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
 
 export async function GET() {
   try {
-    await connectDB()
-    const posts = await Post.find()
-      .populate('likes')
-      .sort({ createdAt: -1 })
-      .lean()
-    return NextResponse.json(posts)
+    const posts = await prisma.post.findMany({
+      include: {
+        likes: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    return NextResponse.json(posts);
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to fetch posts' },
+      { error: '投稿の取得に失敗しました' },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function POST(request: Request) {
   try {
-    await connectDB()
-    const formData = await request.formData()
-    const content = formData.get('content')
+    const json = await request.json();
+    const { title, content, userId, username } = json;
 
-    if (!content || typeof content !== 'string') {
+    if (!title || !content || !userId || !username) {
       return NextResponse.json(
-        { error: 'Content is required' },
+        { error: 'すべての必須フィールドを入力してください' },
         { status: 400 }
-      )
+      );
     }
 
-    const post = await Post.create({
-      content,
-    })
+    const post = await prisma.post.create({
+      data: {
+        title,
+        content,
+        userId,
+        username,
+      },
+      include: {
+        likes: true,
+      },
+    });
 
-    const populatedPost = await Post.findById(post._id)
-      .populate('likes')
-      .lean()
-
-    return NextResponse.json(populatedPost)
+    return NextResponse.json(post);
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to create post' },
+      { error: '投稿の作成に失敗しました' },
       { status: 500 }
-    )
+    );
   }
 }
